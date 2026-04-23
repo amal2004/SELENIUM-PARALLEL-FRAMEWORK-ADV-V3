@@ -1,4 +1,4 @@
-# 🚀 Selenium Parallel Automation Framework
+# 🚀 Selenium Automation Framework Parallel ADV V3
 
 A scalable, thread-safe Selenium Test Automation Framework built using Java, TestNG, and WebDriverManager, designed for parallel execution across multiple browsers (Chrome, Firefox, Edge).
 
