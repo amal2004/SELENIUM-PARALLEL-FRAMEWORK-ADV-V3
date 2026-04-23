@@ -251,6 +251,14 @@ public void testRegistration(String firstName, String lastName,
 git clone https://github.com/your-repo/selenium-parallel.git
 ```
 
+### 🧰 Start the Application Under Test
+
+Download nopCommerce_4.80.9 and run Nop.Web.exe
+Ensure your application is running at:
+```
+http://localhost:5000/register
+```
+
 ### ▶️ Run Tests
 
 ```
