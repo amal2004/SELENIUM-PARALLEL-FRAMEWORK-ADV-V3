@@ -1,4 +1,4 @@
-# 🚀 Selenium Automation Framework Parallel ADV V3
+# 🚀 Selenium Parallel Automation Framework Adv-V3
 
 A scalable, thread-safe Selenium Test Automation Framework built using Java, TestNG, and WebDriverManager, designed for parallel execution across multiple browsers (Chrome, Firefox, Edge).
 
@@ -13,9 +13,9 @@ A scalable, thread-safe Selenium Test Automation Framework built using Java, Tes
 * 🧪 Page Object Model (POM) architecture
 * 📸 Automatic screenshot capture on test failure
 * 🔄 Data-driven testing using TestNG DataProvider
-* 🧰 WebDriverManager integration (optional)
+* 🧰 WebDriverManager integration
 * 🧼 Clean driver lifecycle management
-* 🧩 Custom exception handling for framework stability
+* 🧩 Custom exception handling
 
 ---
 
@@ -31,7 +31,8 @@ com.amalw.parallel
 │   └── ConfigManager.java
 │
 ├── driver
-│   └── DriverFactory.java
+│   ├── DriverFactory.java
+│   └── BrowserManager.java
 │
 ├── enums
 │   └── BrowserType.java
@@ -54,37 +55,22 @@ com.amalw.parallel
 
 ## ⚙️ Supported Properties
 
-The framework uses a `config.properties` file for external configuration.
-
 ### 📄 config.properties
 
-```
+```properties
 base.url=http://localhost:5000
 browser=edge
 timeout=30
+headless=false
 ```
-
-### 🧾 Property Reference
-
-| Key      | Type   | Description                |
-| -------- | ------ | -------------------------- |
-| base.url | String | Application under test URL |
-| browser  | String | chrome / firefox / edge    |
-| timeout  | int    | Default timeout in seconds |
-
-### 🔁 Override via Command Line
-
-```
-mvn test -Dbrowser=chrome -Dtimeout=20
-```
-
-System properties take priority over `config.properties`.
 
 ---
 
 ## 🧠 Framework Architecture
 
-The framework follows the **Page Object Model (POM)** with thread-safe execution.
+The framework follows **Page Object Model (POM)** with **thread-safe parallel execution**.
+
+---
 
 ### 🔹 Core Components
 
@@ -93,19 +79,49 @@ The framework follows the **Page Object Model (POM)** with thread-safe execution
 * Loads configuration from `config.properties`
 * Supports system property overrides
 * Provides typed getters (`String`, `int`, `boolean`)
-* Validates missing configuration
+* Validates missing values
 
-#### 📌 DriverFactory
+---
 
-* Uses `ThreadLocal<WebDriver>` for parallel execution
-* Supports Chrome, Firefox, Edge
-* Optional WebDriverManager integration
-* Handles headless mode
-* Applies global driver configuration
+#### 📌 BrowserManager (NEW)
+
+* Responsible for **creating WebDriver instances**
+* Encapsulates browser-specific logic
+* Uses `WebDriverManager` internally
+* Supports:
+
+  * Chrome
+  * Firefox
+  * Edge
+* Handles browser options (headless, arguments)
+
+```java
+WebDriver driver = BrowserManager.createDriver(browser, headless);
+```
+
+---
+
+#### 📌 DriverFactory (UPDATED)
+
+* Manages **thread-safe WebDriver using ThreadLocal**
+* Delegates driver creation to `BrowserManager`
+* Applies global configurations:
+
+  * Window maximize
+  * Page load timeout
+  * Disable implicit waits
+* Handles driver lifecycle (init / quit)
+
+```java
+DriverFactory.initDriver("chrome");
+WebDriver driver = DriverFactory.getDriver();
+```
+
+---
 
 #### 📌 BasePage
 
-* Reusable Selenium methods:
+* Common reusable Selenium methods:
 
   * click()
   * type()
@@ -113,25 +129,34 @@ The framework follows the **Page Object Model (POM)** with thread-safe execution
   * wait utilities
   * navigation helpers
 
+---
+
 #### 📌 BaseTest
 
-* Initializes WebDriver before each test
-* Cleans up driver after execution
+* Handles setup & teardown
+* Initializes driver per test
 * Captures screenshots on failure
+* Ensures clean driver shutdown
+
+---
 
 #### 📌 Page Classes (RegisterPage)
 
-* Contains locators and page actions
 * Encapsulates UI interactions
+* Maintains locators and actions
+
+---
 
 #### 📌 ScreenshotUtil
 
-* Captures screenshots
-* Stores in:
+* Captures failure screenshots
+* Saves to:
 
 ```
 target/screenshots/
 ```
+
+---
 
 #### 📌 BrowserType (Enum)
 
@@ -140,10 +165,18 @@ target/screenshots/
   * CHROME
   * FIREFOX
   * EDGE
+* Converts string → enum safely
+
+---
 
 #### 📌 FrameworkException
 
-* Custom runtime exception for framework errors
+* Custom runtime exception
+* Handles:
+
+  * Invalid browser
+  * Missing config
+  * Framework errors
 
 ---
 
@@ -152,13 +185,15 @@ target/screenshots/
 ```
 TestNG Test
    ↓
-BaseTest (Setup / Teardown)
+BaseTest
    ↓
-DriverFactory (ThreadLocal WebDriver)
+DriverFactory (ThreadLocal)
    ↓
-BasePage (Reusable Actions)
+BrowserManager (Driver Creation)
    ↓
-Page Classes (RegisterPage)
+BasePage
+   ↓
+Page Classes
    ↓
 Selenium WebDriver
 ```
@@ -167,38 +202,13 @@ Selenium WebDriver
 
 ## 🧪 Test Execution
 
-Tests are executed using TestNG XML configuration.
-
 ### 📄 testng.xml
 
-```
+```xml
 <suite name="ParallelRegistrationSuite" parallel="tests" thread-count="12">
-
-    <test name="ChromeTests">
-        <parameter name="browser" value="chrome" />
-        <classes>
-            <class name="com.amalw.parallel.tests.RegistrationTest"/>
-        </classes>
-    </test>
-
-    <test name="FirefoxTests">
-        <parameter name="browser" value="firefox" />
-        <classes>
-            <class name="com.amalw.parallel.tests.RegistrationTest"/>
-        </classes>
-    </test>
-
-    <test name="EdgeTests">
-        <parameter name="browser" value="edge" />
-        <classes>
-            <class name="com.amalw.parallel.tests.RegistrationTest"/>
-        </classes>
-    </test>
-
-</suite>
 ```
 
-### 🌐 Supported Browsers (Parallel Execution)
+### 🌐 Supported Browsers
 
 * Chrome
 * Firefox
@@ -209,10 +219,10 @@ Tests are executed using TestNG XML configuration.
 ## 🧾 Sample Test Flow
 
 1. Launch browser
-2. Navigate to registration page
-3. Fill form using test data
-4. Submit form
-5. Validate success message
+2. Navigate to page
+3. Fill form
+4. Submit
+5. Validate results
 6. Capture screenshot on failure
 
 ---
@@ -221,23 +231,16 @@ Tests are executed using TestNG XML configuration.
 
 ```java
 @Test(dataProvider = "registrationData")
-public void testRegistration(String firstName, String lastName,
-                             String gender, String company,
-                             String password, String conPassword) {
+public void testRegistration(...) {
 
-    String email = UUID.randomUUID() + "@example.com";
+    RegisterPage page = new RegisterPage();
 
-    RegisterPage registerPage = new RegisterPage();
+    page.open();
+    page.selectGender(gender);
+    page.fillForm(...);
+    page.submit();
 
-    registerPage.open();
-    registerPage.selectGender(gender);
-
-    registerPage.fillForm(firstName, lastName, email, company, password, conPassword);
-    registerPage.submit();
-
-    Assert.assertTrue(registerPage.isRegistrationSuccessful(), "Registration failed!");
-    Assert.assertEquals(registerPage.getConfirmationMessage(),
-            "Your registration completed");
+    Assert.assertTrue(page.isRegistrationSuccessful());
 }
 ```
 
@@ -245,43 +248,36 @@ public void testRegistration(String firstName, String lastName,
 
 ## 🚀 Running the Framework
 
-### 📥 Clone Repository
+### Clone Repo
 
-```
+```bash
 git clone https://github.com/your-repo/selenium-parallel.git
 ```
 
-### 🧰 Start the Application Under Test
+### Start the Application Under Test
 
-Download nopCommerce_4.80.9 and run Nop.Web.exe
+Download nopCommerce_4.80.9 and run Nop.Web.exe.
 Ensure your application is running at:
+
 ```
 http://localhost:5000/register
 ```
 
-### ▶️ Run Tests
+### Run Tests
 
-```
+```bash
 mvn clean test
 ```
 
-### 🌐 Run with Specific Browser
+### Run with Browser
 
-```
+```bash
 mvn test -Dbrowser=chrome
-```
-
-### ⚙️ Run via TestNG XML
-
-```
-mvn clean test -DsuiteXmlFile=testng.xml
 ```
 
 ---
 
 ## 📸 Screenshot Feature
-
-Screenshots are automatically captured on test failure:
 
 ```
 target/screenshots/testName_timestamp.png
@@ -291,39 +287,14 @@ target/screenshots/testName_timestamp.png
 
 ## 🧰 Tech Stack
 
-* Java 17+
-* Selenium WebDriver 4+
+* Java
+* Selenium WebDriver
 * TestNG
 * Maven
 * WebDriverManager
-* Page Object Model (POM)
-
----
-
-## ❗ Custom Exception Handling
-
-```java
-public class FrameworkException extends RuntimeException
-```
-
-Used for:
-
-* Missing configuration
-* Invalid browser values
-* Framework-level errors
-
----
-
-## 🔥 Future Enhancements
-
-* Allure / Extent Reports
-* CI/CD integration (GitHub Actions / Jenkins)
-* Docker execution support
-* Retry mechanism for flaky tests
-* API + UI combined framework
 
 ---
 
 ## 👨‍💻 Author
 
-Built for scalable, maintainable, and parallel Selenium automation execution. By Amal W
+Built for scalable, maintainable, and parallel Selenium automation by Amal W
